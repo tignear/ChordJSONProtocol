@@ -43,5 +43,5 @@ public enum ChordEventType {
         return valueOf(s);
     }
 
-    
+
 }
