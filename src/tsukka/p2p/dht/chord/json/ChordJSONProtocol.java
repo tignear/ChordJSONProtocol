@@ -26,6 +26,7 @@ public class ChordJSONProtocol<A extends DHTAddress>{
     private final byte[] bytes;
     private final ByteBuffer buf;
     private final EnumMap<ChordEventType,BiConsumer<InetSocketAddress,JsonNode>> events;
+    public static final String TYPE_STRING="type";
     protected ChordJSONProtocol(DatagramChannel channel, int size, int idLength) {
         bytes = new byte[size];
         buf = ByteBuffer.wrap(bytes);
@@ -34,8 +35,8 @@ public class ChordJSONProtocol<A extends DHTAddress>{
         network = new NetworkBase(channel, sk -> {
             try {
                 InetSocketAddress address = (InetSocketAddress) ((DatagramChannel) sk.channel()).receive(buf);
-                JsonNode node=JSONObjectMapperHolder.getInstance().readTree(new String(bytes,0,buf.remaining()));
-                String type=node.get("Type").asText();
+                JsonNode node=JSONObjectMapperHolder.getObjectMapper().readTree(new String(bytes,0,buf.remaining()));
+                String type=node.get(TYPE_STRING).asText();
                 events.getOrDefault(ChordEventType.get(type), Functions.dump()).accept(address,node);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -62,5 +63,6 @@ public class ChordJSONProtocol<A extends DHTAddress>{
     public EnumMap<ChordEventType, BiConsumer<InetSocketAddress, JsonNode>> getEvents() {
         return events;
     }
+
 }
 
