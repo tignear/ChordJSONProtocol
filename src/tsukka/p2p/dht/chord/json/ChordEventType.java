@@ -44,7 +44,8 @@ public enum ChordEventType {
      * ハートビートリクエストへの応答です
      */
     RETURN_HEARTBEAT,
-    SUCCESS_SAVE_DATA
+    SUCCESS_SAVE_DATA,
+
     ;
     public static ChordEventType get(String s){
         return valueOf(s);
