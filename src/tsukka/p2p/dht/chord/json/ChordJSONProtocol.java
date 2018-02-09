@@ -1,13 +1,13 @@
 package tsukka.p2p.dht.chord.json;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.experimental.FieldDefaults;
 import tsukka.p2p.dht.DHTAddress;
 import tsukka.p2p.dht.DHTAddressFactory;
 import tsukka.p2p.dht.NetworkBase;
 import tsukka.p2p.dht.chord.RootingTable;
-import tsukka.utility.function.Functions;
-
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -19,14 +19,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 
+import static tsukka.p2p.dht.chord.json.KeyStrings.*;
+
+@FieldDefaults(makeFinal = true,level = AccessLevel.PRIVATE)
 public class ChordJSONProtocol<A extends DHTAddress<A>>{
-    private final ExecutorService exec = Executors.newSingleThreadExecutor();
-    private final NetworkBase network;
+    ExecutorService exec = Executors.newSingleThreadExecutor();
+    NetworkBase network;
     @Getter private final RootingTable<A> rootingTable;
-    private final byte[] bytes;
-    private final ByteBuffer buf;
-    @Getter private final EnumMap<ChordEventType,BiConsumer<InetSocketAddress,JsonNode>> events;
-    public static final String TYPE_STRING="type";
+    byte[] bytes;
+    ByteBuffer buf;
+    @Getter EnumMap<ChordEventType,BiConsumer<ChordConnection,JsonNode>> events;
+
 
     protected ChordJSONProtocol(DatagramChannel channel, int size, int idLength,A myAddress) {
         bytes = new byte[size];
@@ -38,8 +41,9 @@ public class ChordJSONProtocol<A extends DHTAddress<A>>{
             try {
                 InetSocketAddress address = (InetSocketAddress) ((DatagramChannel) sk.channel()).receive(buf);
                 JsonNode node=JSONObjectMapperHolder.getObjectMapper().readTree(new String(bytes,0,buf.remaining()));
-                String type=node.get(TYPE_STRING).asText();
-                events.getOrDefault(ChordEventType.get(type),Functions.dump()).accept(address,node);
+                String id=node.get(ID_STRING).asText();
+                ChordEventType type=ChordEventType.get(node.get(TYPE_STRING).asText());
+                events.getOrDefault(type,(e,e1)->{}).accept(new ChordConnection(address,id),node);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
